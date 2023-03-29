@@ -14,7 +14,7 @@
 
 using namespace std;
 
-constexpr int max_line_length = 1024;
+constexpr int max_line_length = 64;
 
 void read_css(LinkedList<section>& main_list);
 
@@ -153,18 +153,15 @@ void delete_section(LinkedList<section>& main_list, const int index)
 
 void delete_attribute(LinkedList<section>& main_list, const int index, const str& attr)
 {
-	if (index < 1 || index > main_list.length() || main_list.empty()) return;
+	if (index > main_list.length() || index <= 0) return;
+	auto& block = main_list.get(index - 1);
+	auto& attrs = block.get_attributes();
 
-	auto& current_section = main_list.get(index - 1);
-	auto& attrs = current_section.get_attributes();
-
-	for (auto it = attrs.begin(); it != attrs.end(); ++it)
+	for (int i = 0; i < attrs.length(); i++)
 	{
-		if (it->get_name() == attr)
-		{
-			attrs.erase(it);
+		if (attrs.get(i).get_name() == attr) {
+			attrs.erase(i);
 			cout << index << ",D," << attr << " == deleted" << endl;
-			return;
 		}
 	}
 
@@ -174,7 +171,7 @@ void delete_attribute(LinkedList<section>& main_list, const int index, const str
 void read_commands(LinkedList<section>& main_list)
 {
 	char line[max_line_length];
-	while (fgets(line, max_line_length, stdin))
+	while (cin.getline(line, max_line_length))
 	{
 		str command(line);
 		command.trim();
@@ -183,11 +180,13 @@ void read_commands(LinkedList<section>& main_list)
 
 		if (command == "****")
 		{
-			read_css(main_list);
-		} else if (command == "?")
+			//read_css(main_list);
+		}
+		else if (command == "?")
 		{
 			cout << "? == " << main_list.length() << endl;
-		} else
+		}
+		else
 		{
 			const auto command_parts = command.split(',');
 			for (auto& element : command_parts) element.trim();
@@ -197,45 +196,53 @@ void read_commands(LinkedList<section>& main_list)
 				//i,S,?
 				const int index = atoi(command_parts[0].c_str());
 				count_selectors_for_section(main_list, index);
-			} else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "A" && command_parts[2] == "?")
+			}
+			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "A" && command_parts[2] == "?")
 			{
 				//i,A,?
 				const int index = atoi(command_parts[0].c_str());
 				count_attributes_for_section(main_list, index);
-			} else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "S" && is_integer(command_parts[2].c_str()))
+			}
+			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "S" && is_integer(command_parts[2].c_str()))
 			{
 				//i,S,j
 				const int i = atoi(command_parts[0].c_str());
 				const int j = atoi(command_parts[2].c_str());
 				selector_block(main_list, i, j);
-			} else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "A")
+			}
+			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "A")
 			{
 				//i,A,n
 				const str& n_name = command_parts[2];
 				const int index = atoi(command_parts[0].c_str());
 				attribute_name_value(main_list, n_name, index);
-			} else if (command_parts[1] == "A" && command_parts[2] == "?")
+			}
+			else if (command_parts[1] == "A" && command_parts[2] == "?")
 			{
 				//n,A,?
 				const str& n_name = command_parts[0];
 				count_attribute_occ(main_list, n_name);
-			} else if (command_parts[1] == "S" && command_parts[2] == "?")
+			}
+			else if (command_parts[1] == "S" && command_parts[2] == "?")
 			{
 				//z,S,?
 				const str& z_name = command_parts[0];
 				count_selector_occ(main_list, z_name);
-			} else if (command_parts[1] == "E")
+			}
+			else if (command_parts[1] == "E")
 			{
 				//z,E,n
 				const str& z_name = command_parts[0];
 				const str& n_name = command_parts[2];
 				z_e_n(main_list, n_name, z_name);
-			} else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "D" && command_parts[2] == "*")
+			}
+			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "D" && command_parts[2] == "*")
 			{
 				//i,D,*
 				const int index = atoi(command_parts[0].c_str());
 				delete_section(main_list, index);
-			} else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "D")
+			}
+			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "D")
 			{
 				//i,D,n
 				const int index = atoi(command_parts[0].c_str());
@@ -248,12 +255,11 @@ void read_commands(LinkedList<section>& main_list)
 
 void read_css(LinkedList<section>& main_list)
 {
-	char line[max_line_length];
-	while (fgets(line, max_line_length, stdin))
+	str str_line;
+	while (str_line.readline())
 	{
+		if (str_line.empty()) continue;
 		section current_block;
-
-		str str_line(line);
 		str_line.trim();
 
 		if (str_line == "????") return;
@@ -276,7 +282,7 @@ void read_css(LinkedList<section>& main_list)
 			{
 				element.trim();
 				//current_block.add_selector(selector(element));
-				if (!current_block.has_selector(element)) 
+				if (!current_block.has_selector(element))
 					current_block.add_selector(selector(element));
 
 			}
@@ -293,14 +299,16 @@ void read_css(LinkedList<section>& main_list)
 				if (current_block.has_attribute(key))
 				{
 					current_block.overwrite_attribute(key, val);
-				} else
+				}
+				else
 				{
 					current_block.add_attribute(attribute(key, val));
 				}
- 			}
+			}
 
 			main_list.push_back(current_block);
-		} else
+		}
+		else
 		{
 			Vector<str> selector_strings = str_line.split(',');
 			for (auto& selector_string : selector_strings)
@@ -309,14 +317,14 @@ void read_css(LinkedList<section>& main_list)
 				if (selector_string.back() == '{') selector_string.pop_back();
 
 				selector_string.trim();
-				if (!current_block.has_selector(selector_string)) 
+				if (!current_block.has_selector(selector_string))
 					current_block.add_selector(selector(selector_string));
 			}
 
 			//Read attributes
-			while (fgets(line, max_line_length, stdin))
+			str attr_line;
+			while (attr_line.readline())
 			{
-				str attr_line(line);
 				attr_line.trim();
 
 				if (attr_line.front() == '}')
@@ -357,9 +365,9 @@ int main()
 
 	read_css(main_list);
 
-	read_commands(main_list);
+	//read_commands(main_list);
 
-	//print_list(main_list);
+	print_list(main_list);
 
 	return 0;
 }

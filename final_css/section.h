@@ -7,6 +7,7 @@ class section
 {
 	LinkedList<selector> selectors_;
 	LinkedList<attribute> attributes_;
+	bool is_global_ = false;
 
 public:
 	section() = default;
@@ -14,7 +15,7 @@ public:
 	explicit section(const LinkedList<selector>& s, const LinkedList<attribute>& attr)
 		: selectors_(s), attributes_(attr) {}
 
-	section (const section& other)
+	section(const section& other)
 	{
 
 		for (auto& s : other.selectors_) this->selectors_.push_back(s);
@@ -54,4 +55,8 @@ public:
 			if (attr.get_name() == attr_name) attr.set_value(attr_val);
 		}
 	}
+
+	void set_to_global() { this->is_global_ = true; }
+
+	bool is_global() const { return this->is_global_; }
 };
