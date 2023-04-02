@@ -9,7 +9,6 @@ public:
     }
 
     LinkedList(const LinkedList<T>& other) : head(nullptr), tail(nullptr), size(0) {
-        // Iterate through other and create a new node for each element
         for (Node* node = other.head; node != nullptr; node = node->next) {
             push_back(node->value);
         }
@@ -124,8 +123,8 @@ public:
         return size == 0;
     }
 
-    int length() const {
-        return size;
+    [[nodiscard]] int length() const {
+        return this->size;
     }
 
     void clear() {
@@ -229,7 +228,6 @@ public:
     void erase(const LinkedListIterator& it) {
         Node* current_node = it.current_node;
         if (current_node == nullptr) {
-            // throw std::out_of_range("Iterator out of range");
             return;
         }
 

@@ -38,5 +38,8 @@
     <ClInclude Include="str.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BlockStorage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

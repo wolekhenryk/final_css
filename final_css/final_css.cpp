@@ -9,6 +9,7 @@
 #include "selector.h"
 #include "Vector.h"
 #include "section.h"
+#include "BlockStorage.h"
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -20,7 +21,7 @@ constexpr char start_commands[] = "????";
 
 constexpr char resume_css[] = "****";
 
-void read_commands(LinkedList<section>& main_list);
+void read_commands(BlockStorage& storage);
 
 void print_list(const LinkedList<section>& main_list)
 {
@@ -42,6 +43,18 @@ void print_list(const LinkedList<section>& main_list)
 	}
 }
 
+void print_storage(const BlockStorage& blocks)
+{
+	const auto data = blocks.get_data();
+	for (int i = 0; i < data.length(); i++)
+	{
+		cout << "BLOCK => " << i + 1 << endl;
+		const auto& element = data.get(i);
+		print_list(element);
+		cout << "============================================" << endl;
+	}
+} 
+
 bool is_integer(const char* str) {
 	if (str == nullptr || !*str)
 		return false;
@@ -55,182 +68,7 @@ bool is_integer(const char* str) {
 	return true;
 }
 
-void count_selectors_for_section(const LinkedList<section>& main_list, const int index)
-{
-	if (index > main_list.length()) return;
-	const auto x = main_list.get(index - 1);
-	const auto selectors = x.get_selectors();
-
-	LinkedList<selector> new_selectors;
-
-	for (const auto& sel : selectors)
-	{
-		bool found_duplicate = false;
-		for (const auto& new_sel : new_selectors)
-		{
-			if (sel.get_name() == new_sel.get_name())
-			{
-				found_duplicate = true;
-				break;
-			}
-		}
-
-		if (!found_duplicate) new_selectors.push_back(sel);
-	}
-
-	cout << index << ",S,? == " << new_selectors.length() << endl;
-}
-
-void count_attributes_for_section(const LinkedList<section>& main_list, const int index)
-{
-	if (index > main_list.length()) return;
-
-	const auto& attributes = main_list.get(index - 1).get_attributes();
-	LinkedList<attribute> new_attributes;
-
-	for (const auto& attr : attributes)
-	{
-		bool found_duplicate = false;
-		for (const auto& new_attr : new_attributes) {
-			if (attr.get_name() == new_attr.get_name()) {
-				found_duplicate = true;
-				break;
-			}
-		}
-		if (!found_duplicate) {
-			new_attributes.push_back(attr);
-		}
-	}
-
-	cout << index << ",A,? == " << new_attributes.length() << endl;
-}
-
-void selector_block(const LinkedList<section>& main_list, const int i, const int j)
-{
-	if (i > main_list.length()) return;
-
-	const auto current_block_selectors = main_list.get(i - 1).get_selectors();
-
-	if (current_block_selectors.empty() || j > current_block_selectors.length()) return;
-
-	const auto result = current_block_selectors.get(j - 1).get_name();
-
-	cout << i << ",S," << j << " == " << result.c_str() << endl;
-
-}
-
-void attribute_name_value(const LinkedList<section>& main_list, const str& n_name, const int index)
-{
-	if (index > main_list.length()) return;
-	const auto& attributes = main_list.get(index - 1).get_attributes();
-
-	for (auto it = attributes.rbegin(); it != attributes.rend(); ++it)
-	{
-		const auto& curr_attr = *it;
-		if (curr_attr.get_name() == n_name)
-		{
-			cout << index << ",A," << n_name << " == " << curr_attr.get_value() << endl;
-			break;
-		}
-	}
-
-
-	/*for (const auto& element : attributes)
-	{
-		if (element.get_name() == n_name)
-		{
-			cout << index << ",A," << n_name << " == " << element.get_value() << endl;
-			break;
-		}
-	}*/
-}
-
-void count_attribute_occ(const LinkedList<section>& main_list, const str& n_name)
-{
-	int count = 0;
-	for (const auto& element : main_list)
-	{
-		for (const auto& attr : element.get_attributes())
-		{
-			if (attr.get_name() == n_name)
-			{
-				count++;
-				break;
-			}
-		}
-	}
-	cout << n_name << ",A,? == " << count << endl;
-}
-
-void count_selector_occ(const LinkedList<section>& main_list, const str& z_name)
-{
-	int count = 0;
-	for (const auto& element : main_list)
-	{
-		for (const auto& sel : element.get_selectors())
-		{
-			if (sel.get_name() == z_name)
-			{
-				count++;
-				break;
-			}
-		}
-	}
-	cout << z_name << ",S,? == " << count << endl;
-}
-
-void z_e_n(const LinkedList<section>& main_list, const str& n_name, const str& z_name)
-{
-	for (auto section_iter = main_list.rbegin(); section_iter != main_list.rend(); ++section_iter)
-	{
-		const auto& curr_section = *section_iter;
-		for (const auto& sel : curr_section.get_selectors())
-		{
-			if (sel.get_name() == z_name)
-			{
-				const auto& attributes_for_selector = curr_section.get_attributes();
-				for (const auto& attr : attributes_for_selector)
-				{
-					if (attr.get_name() == n_name)
-					{
-						cout << z_name << ",E," << n_name << " == " << attr.get_value() << endl;
-						return;
-					}
-				}
-			}
-		}
-	}
-}
-
-void delete_section(LinkedList<section>& main_list, const int index)
-{
-	if (index > main_list.length() || index < 1) return;
-	main_list.erase(index - 1);
-	cout << index << ",D,* == deleted" << endl;
-}
-
-void delete_attribute(LinkedList<section>& main_list, const int index, const str& attr)
-{
-	if (index > main_list.length() || index <= 0) return;
-	auto& block = main_list.get(index - 1);
-	auto& attrs = block.get_attributes();
-
-	for (int i = 0; i < attrs.length(); i++)
-	{
-		if (attrs.get(i).get_name() == attr) {
-			attrs.erase(i);
-			cout << index << ",D," << attr << " == deleted" << endl;
-		}
-	}
-
-	if (attrs.empty()) main_list.erase(index - 1);
-}
-
-void check_for_garbage(section& curr)
-{
-}
-
-void read_css(LinkedList<section>& main_list)
+void read_css(BlockStorage& storage)
 {
 	char line[1024];
 	while (fgets(line, max_line_length, stdin))
@@ -240,7 +78,7 @@ void read_css(LinkedList<section>& main_list)
 		section current_block;
 		str_line.trim();
 
-		if (str_line == start_commands) print_list(main_list);
+		if (str_line == start_commands) read_commands(storage);
 		if (str_line.length() == 0) continue;
 
 		if (str_line.find('{') != -1 && str_line.find('}') != -1)
@@ -286,7 +124,8 @@ void read_css(LinkedList<section>& main_list)
 				}
 			}
 
-			main_list.push_back(current_block);
+			storage.add_new_element(current_block);
+			//main_list.push_back(current_block);
 		}
 		else
 		{
@@ -347,7 +186,8 @@ void read_css(LinkedList<section>& main_list)
 				if (attr_line.front() == '}')
 				{
 					//End of block
-					main_list.push_back(current_block);
+					storage.add_new_element(current_block);
+					//main_list.push_back(current_block);
 					break;
 				}
 
@@ -378,7 +218,7 @@ void read_css(LinkedList<section>& main_list)
 	}
 }
 
-void read_commands(LinkedList<section>& main_list)
+void read_commands(BlockStorage& storage)
 {
 	char line[max_line_length];
 	memset(line, '\0', max_line_length);
@@ -391,11 +231,11 @@ void read_commands(LinkedList<section>& main_list)
 
 		if (command == resume_css)
 		{
-			read_css(main_list);
+			read_css(storage);
 		}
 		else if (command == "?")
 		{
-			cout << "? == " << main_list.length() << endl;
+			storage.display_sections_count();
 		}
 		else
 		{
@@ -406,59 +246,59 @@ void read_commands(LinkedList<section>& main_list)
 			{
 				//i,S,?
 				const int index = atoi(command_parts[0].c_str());
-				count_selectors_for_section(main_list, index);
+				storage.display_selectors_for_section(index - 1);
 			}
 			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "A" && command_parts[2] == "?")
 			{
 				//i,A,?
 				const int index = atoi(command_parts[0].c_str());
-				count_attributes_for_section(main_list, index);
+				storage.display_attribute_count_for_section(index - 1);
 			}
 			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "S" && is_integer(command_parts[2].c_str()))
 			{
 				//i,S,j
 				const int i = atoi(command_parts[0].c_str());
 				const int j = atoi(command_parts[2].c_str());
-				selector_block(main_list, i, j);
+				storage.selector_for_block(i - 1, j - 1);
 			}
 			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "A")
 			{
 				//i,A,n
 				const str& n_name = command_parts[2];
 				const int index = atoi(command_parts[0].c_str());
-				attribute_name_value(main_list, n_name, index);
+				storage.attribute_name_value(n_name, index - 1);
 			}
 			else if (command_parts[1] == "A" && command_parts[2] == "?")
 			{
 				//n,A,?
 				const str& n_name = command_parts[0];
-				count_attribute_occ(main_list, n_name);
+				storage.count_attribute_occ(n_name);
 			}
 			else if (command_parts[1] == "S" && command_parts[2] == "?")
 			{
 				//z,S,?
 				const str& z_name = command_parts[0];
-				count_selector_occ(main_list, z_name);
+				storage.count_selector_occ(z_name);
 			}
 			else if (command_parts[1] == "E")
 			{
 				//z,E,n
 				const str& z_name = command_parts[0];
 				const str& n_name = command_parts[2];
-				z_e_n(main_list, n_name, z_name);
+				storage.z_e_n(n_name, z_name);
 			}
 			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "D" && command_parts[2] == "*")
 			{
 				//i,D,*
 				const int index = atoi(command_parts[0].c_str());
-				delete_section(main_list, index);
+				storage.delete_entire_section(index - 1);
 			}
 			else if (is_integer(command_parts[0].c_str()) && command_parts[1] == "D")
 			{
 				//i,D,n
 				const int index = atoi(command_parts[0].c_str());
 				const str& attr = command_parts[2];
-				delete_attribute(main_list, index, attr);
+				storage.delete_attribute(index - 1, attr);
 			}
 		}
 	}
@@ -466,9 +306,11 @@ void read_commands(LinkedList<section>& main_list)
 
 int main()
 {
-	LinkedList<section> main_list;
+	//LinkedList<section> main_list;
+	BlockStorage storage;
 
-	read_css(main_list);
+
+	read_css(storage);
 
 
 	return 0;
