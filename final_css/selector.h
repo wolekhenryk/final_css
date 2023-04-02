@@ -8,5 +8,5 @@ class selector
 public:
 	explicit selector(const str& name) { this->name_ = name; }
 
-	const str& get_name() const { return this->name_; }
+	[[nodiscard]] const str& get_name() const { return this->name_; }
 };

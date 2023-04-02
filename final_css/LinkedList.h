@@ -27,6 +27,19 @@ public:
         size++;
     }
 
+    void push_back (T& value)
+    {
+        Node* new_node = new Node(value, tail, nullptr);
+        if (tail != nullptr) {
+            tail->next = new_node;
+        }
+        else {
+            head = new_node;
+        }
+        tail = new_node;
+        size++;
+    }
+
     void push_back(const T& value) {
         Node* new_node = new Node(value, tail, nullptr);
         if (tail != nullptr) {
@@ -126,6 +139,7 @@ public:
         tail = nullptr;
         size = 0;
     }
+
 
     void erase(const int i) {
         if (i < 0 || i >= size) {

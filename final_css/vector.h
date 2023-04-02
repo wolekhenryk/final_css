@@ -9,6 +9,16 @@ class Vector
 
 public:
 	Vector() : data_(nullptr), size_(0), capacity_(0) {}
+
+	Vector(const Vector<T>& other) : data_(nullptr), size_(0), capacity_(0)
+	{
+		reserve(other.size_);
+
+		for (int i = 0; i < other.size_; i++) {
+			push_back(other[i]);
+		}
+	}
+
 	~Vector() { clear(); }
 
 	void push_back(const T& value)

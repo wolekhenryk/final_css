@@ -14,9 +14,13 @@
 
 using namespace std;
 
-constexpr int max_line_length = 64;
+constexpr int max_line_length = 1024;
 
-void read_css(LinkedList<section>& main_list);
+constexpr char start_commands[] = "????";
+
+constexpr char resume_css[] = "****";
+
+void read_commands(LinkedList<section>& main_list);
 
 void print_list(const LinkedList<section>& main_list)
 {
@@ -54,22 +58,65 @@ bool is_integer(const char* str) {
 void count_selectors_for_section(const LinkedList<section>& main_list, const int index)
 {
 	if (index > main_list.length()) return;
-	cout << index << ",S,? == " << main_list.get(index - 1).get_selectors().length() << endl;
+	const auto x = main_list.get(index - 1);
+	const auto selectors = x.get_selectors();
+
+	LinkedList<selector> new_selectors;
+
+	for (const auto& sel : selectors)
+	{
+		bool found_duplicate = false;
+		for (const auto& new_sel : new_selectors)
+		{
+			if (sel.get_name() == new_sel.get_name())
+			{
+				found_duplicate = true;
+				break;
+			}
+		}
+
+		if (!found_duplicate) new_selectors.push_back(sel);
+	}
+
+	cout << index << ",S,? == " << new_selectors.length() << endl;
 }
 
 void count_attributes_for_section(const LinkedList<section>& main_list, const int index)
 {
 	if (index > main_list.length()) return;
-	cout << index << ",A,? == " << main_list.get(index - 1).get_attributes().length() << endl;
+
+	const auto& attributes = main_list.get(index - 1).get_attributes();
+	LinkedList<attribute> new_attributes;
+
+	for (const auto& attr : attributes)
+	{
+		bool found_duplicate = false;
+		for (const auto& new_attr : new_attributes) {
+			if (attr.get_name() == new_attr.get_name()) {
+				found_duplicate = true;
+				break;
+			}
+		}
+		if (!found_duplicate) {
+			new_attributes.push_back(attr);
+		}
+	}
+
+	cout << index << ",A,? == " << new_attributes.length() << endl;
 }
 
 void selector_block(const LinkedList<section>& main_list, const int i, const int j)
 {
 	if (i > main_list.length()) return;
-	const auto& selectors_for_block = main_list.get(i - 1).get_selectors();
-	if (j > selectors_for_block.length()) return;
 
-	cout << i << ",S," << j << " == " << selectors_for_block.get(j - 1).get_name() << endl;
+	const auto current_block_selectors = main_list.get(i - 1).get_selectors();
+
+	if (current_block_selectors.empty() || j > current_block_selectors.length()) return;
+
+	const auto result = current_block_selectors.get(j - 1).get_name();
+
+	cout << i << ",S," << j << " == " << result.c_str() << endl;
+
 }
 
 void attribute_name_value(const LinkedList<section>& main_list, const str& n_name, const int index)
@@ -77,14 +124,25 @@ void attribute_name_value(const LinkedList<section>& main_list, const str& n_nam
 	if (index > main_list.length()) return;
 	const auto& attributes = main_list.get(index - 1).get_attributes();
 
-	for (const auto& element : attributes)
+	for (auto it = attributes.rbegin(); it != attributes.rend(); ++it)
+	{
+		const auto& curr_attr = *it;
+		if (curr_attr.get_name() == n_name)
+		{
+			cout << index << ",A," << n_name << " == " << curr_attr.get_value() << endl;
+			break;
+		}
+	}
+
+
+	/*for (const auto& element : attributes)
 	{
 		if (element.get_name() == n_name)
 		{
 			cout << index << ",A," << n_name << " == " << element.get_value() << endl;
 			break;
 		}
-	}
+	}*/
 }
 
 void count_attribute_occ(const LinkedList<section>& main_list, const str& n_name)
@@ -168,9 +226,162 @@ void delete_attribute(LinkedList<section>& main_list, const int index, const str
 	if (attrs.empty()) main_list.erase(index - 1);
 }
 
+void check_for_garbage(section& curr)
+{
+}
+
+void read_css(LinkedList<section>& main_list)
+{
+	char line[1024];
+	while (fgets(line, max_line_length, stdin))
+	{
+		str str_line(line);
+		if (str_line.empty()) continue;
+		section current_block;
+		str_line.trim();
+
+		if (str_line == start_commands) print_list(main_list);
+		if (str_line.length() == 0) continue;
+
+		if (str_line.find('{') != -1 && str_line.find('}') != -1)
+		{
+			//Single line block
+			str first_part = str_line.substr(0, str_line.find('{'));
+			str second_part = str_line.substr(str_line.find('{') + 1);
+
+			first_part.trim();
+			if (second_part.find('}') != -1) second_part.pop_back();
+			second_part.trim();
+
+			Vector<str> line_of_selectors = first_part.split(',');
+			Vector<str> line_of_attributes = second_part.split(';');
+
+			for (auto& element : line_of_selectors)
+			{
+				element.trim();
+				//current_block.add_selector(selector(element));
+				if (!current_block.has_selector(element) && element.length() > 0)
+					current_block.add_selector(selector(element));
+
+			}
+
+			for (auto& element : line_of_attributes)
+			{
+				const auto colon_pos = element.find(':');
+				str key = element.substr(0, colon_pos);
+				str val = element.substr(colon_pos + 1);
+
+				key.trim();
+				val.trim();
+
+				if (key.empty() || val.empty()) continue;
+
+				if (current_block.has_attribute(key))
+				{
+					current_block.overwrite_attribute(key, val);
+				}
+				else
+				{
+					current_block.add_attribute(attribute(key, val));
+				}
+			}
+
+			main_list.push_back(current_block);
+		}
+		else
+		{
+			bool multiline = true;
+			if (str_line.find('{') != -1) multiline = false;
+
+			Vector<str> initial_selectors = str_line.split(',');
+			for (auto& element : initial_selectors)
+			{
+				element.trim();
+				if (element.back() == '{') element.pop_back();
+				element.trim();
+				if (!current_block.has_selector(element))
+					current_block.add_selector(selector(element));
+			}
+
+			while (multiline && fgets(line, max_line_length, stdin))
+			{
+				str new_line(line);
+				new_line.trim();
+
+				if (new_line.empty()) continue;
+
+				if (new_line.find('{') != -1)
+				{
+					multiline = false;
+					//End of selectors
+					Vector<str> final_selectors = new_line.split(',');
+					if (final_selectors.size() != 0)
+					{
+						for (auto& element : final_selectors)
+						{
+							element.trim();
+							if (element.back() == '{') element.pop_back();
+							element.trim();
+							if (!current_block.has_selector(element) && element.length() > 0)
+								current_block.add_selector(selector(element));
+						}
+					}
+					break;
+				}
+
+				Vector<str> inline_selectors = new_line.split(',');
+				for (auto& element : inline_selectors)
+				{
+					element.trim();
+					if (!current_block.has_selector(element) &&  element.length() > 0)
+						current_block.add_selector(selector(element));
+				}
+			}
+
+			//Read attributes
+			while (fgets(line, max_line_length, stdin))
+			{
+				str attr_line(line);
+				attr_line.trim();
+
+				if (attr_line.front() == '}')
+				{
+					//End of block
+					main_list.push_back(current_block);
+					break;
+				}
+
+				if (attr_line.length() == 1) continue;
+
+				const auto colon_pos = attr_line.find(':');
+
+				str key = attr_line.substr(0, colon_pos);
+				str val = attr_line.substr(colon_pos + 1);
+
+				if (key.empty() || val.empty()) continue;
+
+				key.trim();
+				val.trim();
+
+				if (val.back() == ';') val.pop_back();
+
+				if (current_block.has_attribute(key))
+				{
+					current_block.overwrite_attribute(key, val);
+				}
+				else
+				{
+					current_block.add_attribute(attribute(key, val));
+				}
+			}
+		}
+	}
+}
+
 void read_commands(LinkedList<section>& main_list)
 {
 	char line[max_line_length];
+	memset(line, '\0', max_line_length);
 	while (cin.getline(line, max_line_length))
 	{
 		str command(line);
@@ -178,9 +389,9 @@ void read_commands(LinkedList<section>& main_list)
 
 		if (command.length() == 0) continue;
 
-		if (command == "****")
+		if (command == resume_css)
 		{
-			//read_css(main_list);
+			read_css(main_list);
 		}
 		else if (command == "?")
 		{
@@ -253,121 +464,12 @@ void read_commands(LinkedList<section>& main_list)
 	}
 }
 
-void read_css(LinkedList<section>& main_list)
-{
-	str str_line;
-	while (str_line.readline())
-	{
-		if (str_line.empty()) continue;
-		section current_block;
-		str_line.trim();
-
-		if (str_line == "????") return;
-		if (str_line.length() == 0) continue;
-
-		if (str_line.find('{') != -1 && str_line.find('}') != -1)
-		{
-			//Single line block
-			str first_part = str_line.substr(0, str_line.find('{'));
-			str second_part = str_line.substr(str_line.find('{') + 1);
-
-			first_part.trim();
-			if (second_part.find('}') != -1) second_part.pop_back();
-			second_part.trim();
-
-			Vector<str> line_of_selectors = first_part.split(',');
-			Vector<str> line_of_attributes = second_part.split(';');
-
-			for (auto& element : line_of_selectors)
-			{
-				element.trim();
-				//current_block.add_selector(selector(element));
-				if (!current_block.has_selector(element))
-					current_block.add_selector(selector(element));
-
-			}
-
-			for (auto& element : line_of_attributes)
-			{
-				const auto colon_pos = element.find(':');
-				str key = element.substr(0, colon_pos);
-				str val = element.substr(colon_pos + 1);
-
-				key.trim();
-				val.trim();
-
-				if (current_block.has_attribute(key))
-				{
-					current_block.overwrite_attribute(key, val);
-				}
-				else
-				{
-					current_block.add_attribute(attribute(key, val));
-				}
-			}
-
-			main_list.push_back(current_block);
-		}
-		else
-		{
-			Vector<str> selector_strings = str_line.split(',');
-			for (auto& selector_string : selector_strings)
-			{
-				selector_string.trim();
-				if (selector_string.back() == '{') selector_string.pop_back();
-
-				selector_string.trim();
-				if (!current_block.has_selector(selector_string))
-					current_block.add_selector(selector(selector_string));
-			}
-
-			//Read attributes
-			str attr_line;
-			while (attr_line.readline())
-			{
-				attr_line.trim();
-
-				if (attr_line.front() == '}')
-				{
-					//End of block
-					main_list.push_back(current_block);
-					break;
-				}
-
-				if (attr_line.length() == 1) continue;
-
-				const auto colon_pos = attr_line.find(':');
-
-				str key = attr_line.substr(0, colon_pos);
-				str val = attr_line.substr(colon_pos + 1);
-
-				key.trim();
-				val.trim();
-
-				if (val.back() == ';') val.pop_back();
-
-				if (current_block.has_attribute(key))
-				{
-					current_block.overwrite_attribute(key, val);
-				}
-				else
-				{
-					current_block.add_attribute(attribute(key, val));
-				}
-			}
-		}
-	}
-}
-
 int main()
 {
 	LinkedList<section> main_list;
 
 	read_css(main_list);
 
-	//read_commands(main_list);
-
-	print_list(main_list);
 
 	return 0;
 }
