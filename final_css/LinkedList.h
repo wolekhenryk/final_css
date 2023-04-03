@@ -5,7 +5,7 @@ class LinkedList {
 public:
     LinkedList() : head(nullptr), tail(nullptr), size(0) {}
     ~LinkedList() {
-        clear();
+        //clear();
     }
 
     LinkedList(const LinkedList<T>& other) : head(nullptr), tail(nullptr), size(0) {
@@ -251,7 +251,7 @@ public:
 
     class LinkedListReverseIterator {
     public:
-        LinkedListReverseIterator(Node* current_node) : current_node(current_node) {}
+	    explicit LinkedListReverseIterator(Node* current_node) : current_node(current_node) {}
 
         T& operator*() const {
             return current_node->value;

@@ -43,17 +43,17 @@ void print_list(const LinkedList<section>& main_list)
 	}
 }
 
-void print_storage(const BlockStorage& blocks)
-{
-	const auto data = blocks.get_data();
-	for (int i = 0; i < data.length(); i++)
-	{
-		cout << "BLOCK => " << i + 1 << endl;
-		const auto& element = data.get(i);
-		print_list(element);
-		cout << "============================================" << endl;
-	}
-} 
+//void print_storage(const BlockStorage& blocks)
+//{
+//	const auto data = blocks.get_data();
+//	for (int i = 0; i < data.length(); i++)
+//	{
+//		cout << "BLOCK => " << i + 1 << endl;
+//		const auto& element = data.get(i);
+//		print_list(element);
+//		cout << "============================================" << endl;
+//	}
+//} 
 
 bool is_integer(const char* str) {
 	if (str == nullptr || !*str)
@@ -124,7 +124,7 @@ void read_css(BlockStorage& storage)
 				}
 			}
 
-			storage.add_new_element(current_block);
+			storage.add_new_element(section(current_block));
 			//main_list.push_back(current_block);
 		}
 		else
@@ -138,7 +138,7 @@ void read_css(BlockStorage& storage)
 				element.trim();
 				if (element.back() == '{') element.pop_back();
 				element.trim();
-				if (!current_block.has_selector(element))
+				if (!current_block.has_selector(element) && element.length() > 0)
 					current_block.add_selector(selector(element));
 			}
 
@@ -182,16 +182,15 @@ void read_css(BlockStorage& storage)
 			{
 				str attr_line(line);
 				attr_line.trim();
+				if (attr_line.empty()) continue;
 
 				if (attr_line.front() == '}')
 				{
 					//End of block
-					storage.add_new_element(current_block);
+					storage.add_new_element(section(current_block));
 					//main_list.push_back(current_block);
 					break;
 				}
-
-				if (attr_line.length() == 1) continue;
 
 				const auto colon_pos = attr_line.find(':');
 
