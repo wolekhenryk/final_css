@@ -7,7 +7,7 @@ This tool is ideal for web developers and designers who want to improve the perf
 
 
 
-
+[![Tech stack: C++](https://img.shields.io/badge/Tech%20stack-C%2B%2B-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
 
