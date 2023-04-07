@@ -65,7 +65,7 @@ public:
         assign(other.buf_);
     }
 
-    // Move constructor
+    // Move constructor, it might be unnecessary!
     str(str&& other) noexcept {
         buf_ = other.buf_;
         size_ = other.size_;
